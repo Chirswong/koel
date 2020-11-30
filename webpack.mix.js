@@ -1,17 +1,45 @@
-const mix = require('laravel-mix');
+const mix = require('laravel-mix')
+const fs = require('fs')
+const { externals, resolve, plugins } = require('./webpack.config.js')
 
-/*
- |--------------------------------------------------------------------------
- | Mix Asset Management
- |--------------------------------------------------------------------------
- |
- | Mix provides a clean, fluent API for defining some Webpack build steps
- | for your Laravel applications. By default, we are compiling the CSS
- | file for the application as well as bundling up all the JS files.
- |
- */
+mix.webpackConfig({
+    externals,
+    resolve,
+    plugins,
+    output: {
+        chunkFilename: mix.config.production ? 'js/[name].[chunkhash].js' : 'js/[name].js',
+        publicPath: '/'
+    },
+    devServer: {
+        port: 8080,
+        proxy: {
+            '/': 'http://127.0.0.1:8000/'
+        }
+    }
+})
 
-mix.js('resources/js/app.js', 'public/js')
-    .postCss('resources/css/app.css', 'public/css', [
-        //
-    ]);
+mix.setResourceRoot('./')
+
+if (mix.config.hmr) {
+    // Somehow public/hot isn't being removed by Mix. We'll handle it ourselves.
+    process.on('SIGINT', () => {
+        try {
+            fs.unlinkSync(mix.config.publicPath + '/hot')
+        } catch (e) {
+        }
+        process.exit()
+    })
+} else {
+    mix.copy('resources/assets/img', 'public/img', false)
+        .copy('node_modules/font-awesome/fonts', 'public/fonts', false)
+}
+
+mix.ts('resources/assets/js/app.ts', 'public/js')
+    .sass('resources/assets/sass/app.scss', 'public/css')
+    .ts('resources/assets/js/remote/app.ts', 'public/js/remote')
+    .sass('resources/assets/sass/remote.scss', 'public/css')
+
+if (mix.config.production) {
+    mix.version()
+    mix.disableNotifications()
+}
