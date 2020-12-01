@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Exceptions\InstallationFailedException;
 use Illuminate\Console\Command;
+use Jackiedo\DotenvEditor\DotenvEditor;
 use Illuminate\Contracts\Console\Kernel as Artisan;
 
 class InitCommand extends Command
@@ -17,6 +18,7 @@ class InitCommand extends Command
     protected $description = 'Install or upgrade Koel';
 
     private $artisan;
+    private $dotenvEditor;
 
     /**
      * Create a new command instance.
@@ -24,11 +26,13 @@ class InitCommand extends Command
      * @return void
      */
     public function __construct(
-        Artisan $artisan
+        Artisan $artisan,
+        DotenvEditor $dotenvEditor
     )
     {
         parent::__construct();
         $this->artisan = $artisan;
+        $this->dotenvEditor = $dotenvEditor;
     }
 
     /**
@@ -40,7 +44,7 @@ class InitCommand extends Command
     {
         $this->comment('Attempting to install or upgrade Koel.');
         $this->comment('Remember, you can always install/upgrade manually following the guide here:');
-        $this->info('📙  '.config('koel.misc.docs_url').PHP_EOL);
+        $this->info('📙  ' . config('koel.misc.docs_url') . PHP_EOL);
 
         if ($this->inNoInteractionMode()) {
             $this->info('Running in no-interaction mode');
@@ -50,7 +54,7 @@ class InitCommand extends Command
             $this->maybeCompileFrontEndAssets();
         } catch (\Exception $e) {
             $this->error("Oops! Koel installation or upgrade didn't finish successfully.");
-            $this->error('Please try again, or visit '.config('koel.misc.docs_url').' for manual installation.');
+            $this->error('Please try again, or visit ' . config('koel.misc.docs_url') . ' for manual installation.');
             $this->error('😥 Sorry for this. You deserve better.');
 
             return;
@@ -84,7 +88,7 @@ class InitCommand extends Command
 
         $runOkOrThrow = static function ($command) {
             passthru($command, $status);
-            throw_if((bool) $status, InstallationFailedException::class);
+            throw_if((bool)$status, InstallationFailedException::class);
         };
 
         $runOkOrThrow('yarn install --colors');
@@ -94,5 +98,47 @@ class InitCommand extends Command
 
         $runOkOrThrow('yarn install --colors');
         $runOkOrThrow('yarn production --colors');
+    }
+
+    private function setUpDatabase()
+    {
+        $config = [
+            'DB_CONNECTION' => '',
+            'DB_HOST' => '',
+            'DB_PORT' => '',
+            'DB_DATABASE' => '',
+            'DB_USERNAME' => '',
+            'DB_PASSWORD' => ''
+        ];
+
+        $config['DB_CONNECTION'] = $this->choice(
+            'Your DB driver of choice',
+            [
+                'mysql' => 'MySQL/MariaDB',
+                'pgsql' => 'PostgreSQL',
+                'sqlsrv' => 'SQL Server',
+                'sqlite-e2e' => 'SQLite'
+            ],
+            'mysql');
+
+        if ($config['DB_CONNECTION'] === 'sqlite-e2e') {
+            $config['DB_DATABASE'] = $this->ask('Absolute path to the DB file');
+        } else {
+            $config['DB_HOST'] = $this->anticipate('DB host', ['127.0.0.1', 'localhost']);
+        }
+
+        foreach ($config as $key => $value) {
+            $this->dotenvEditor->setKey($key, $value);
+        }
+        $this->dotenvEditor->save();
+
+        config([
+            'database.default' => $config['DB_CONNECTION'],
+            "database.connections.{$config['DB_CONNECTION']}.host" => $config['DB_HOST'],
+            "database.connections.{$config['DB_CONNECTION']}.port" => $config['DB_PORT'],
+            "database.connections.{$config['DB_CONNECTION']}.database" => $config['DB_DATABASE'],
+            "database.connections.{$config['DB_CONNECTION']}.username" => $config['DB_USERNAME'],
+            "database.connections.{$config['DB_CONNECTION']}.password" => $config['DB_PASSWORD'],
+        ]);
     }
 }
