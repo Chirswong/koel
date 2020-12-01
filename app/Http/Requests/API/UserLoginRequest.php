@@ -2,20 +2,12 @@
 
 namespace App\Http\Requests\API;
 
-use Illuminate\Foundation\Http\FormRequest;
-
-class UserLoginRequest extends FormRequest
+/**
+ * Class UserLoginRequest
+ * @package App\Http\Requests\API
+ */
+class UserLoginRequest extends Request
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     *
-     * @return bool
-     */
-    public function authorize()
-    {
-        return false;
-    }
-
     /**
      * Get the validation rules that apply to the request.
      *
@@ -24,7 +16,8 @@ class UserLoginRequest extends FormRequest
     public function rules()
     {
         return [
-            //
+            'email' => 'required|email',
+            'password' => 'required'
         ];
     }
 }
