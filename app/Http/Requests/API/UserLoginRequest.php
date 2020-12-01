@@ -4,7 +4,8 @@ namespace App\Http\Requests\API;
 
 /**
  * Class UserLoginRequest
- * @package App\Http\Requests\API
+ * @property  string $email
+ * @property string $password
  */
 class UserLoginRequest extends Request
 {

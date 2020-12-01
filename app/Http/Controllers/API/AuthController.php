@@ -2,21 +2,20 @@
 
 namespace App\Http\Controllers\API;
 
-
 use App\Service\TokenManager;
-use Illuminate\Http\Request;
 use Illuminate\Hashing\HashManager;
 use App\Repositories\UserRepository;
 use Illuminate\Auth\Authenticatable;
+use App\Http\Requests\API\UserLoginRequest;
+use Illuminate\Http\Response;
 
 
 class AuthController extends Controller
 {
-    private $userRepository;
     private $hash;
-    private $tokenManager;
-
     private $currentUser;
+    private $tokenManager;
+    private $userRepository;
 
     public function __construct(
         HashManager $hash,
@@ -29,5 +28,18 @@ class AuthController extends Controller
         $this->currentUser = $currentUser;
         $this->tokenManager = $tokenManager;
         $this->userRepository = $userRepository;
+    }
+
+    public function login(UserLoginRequest $request)
+    {
+        $user = $this->userRepository->getFirstWhere('email', $request->email);
+
+        if (!$user || !$this->hash->check($request->password, $user->password)) {
+            abort(Response::HTTP_UNAUTHORIZED, 'invalid credentials');
+        }
+
+        return response()->json([
+            'token' => $this->tokenManager->createToken($user)->plainTextToken,
+        ]);
     }
 }
