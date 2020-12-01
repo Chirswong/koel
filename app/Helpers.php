@@ -7,9 +7,9 @@ function album_cover_path($fileName)
     return public_path(config('koel.album_cover_dir') . $fileName);
 }
 
-function album_cover_url($fileName)
+function album_cover_url(string $fileName): string
 {
-    return app()->setLocale();
+    return app()->staticUrl(config('koel.album_cover_dir').$fileName);
 }
 
 function album_thumbnail_url($filename)

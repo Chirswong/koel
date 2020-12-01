@@ -4,12 +4,20 @@ namespace App;
 
 use Illuminate\Foundation\Application as IlluminateApplication;
 
+/**
+ * Class Application
+ * @package App
+ */
 class Application extends IlluminateApplication
 {
 
     const KOEK_VERSION = 'v4.4.0';
 
-    public function staticUrl($name = null)
+    /**
+     * @param null $name
+     * @return string
+     */
+    public function staticUrl(?string $name = null): string
     {
         $cdnUrl = trim(config('koel.cnd.url'), '/ ');
 
