@@ -3,11 +3,11 @@
 namespace App\Http\Controllers\API;
 
 use App\Service\TokenManager;
+use Illuminate\Http\Response;
 use Illuminate\Hashing\HashManager;
 use App\Repositories\UserRepository;
-use Illuminate\Auth\Authenticatable;
 use App\Http\Requests\API\UserLoginRequest;
-use Illuminate\Http\Response;
+use Illuminate\Contracts\Auth\Authenticatable;
 
 
 class AuthController extends Controller
