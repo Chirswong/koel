@@ -156,6 +156,23 @@ class InitCommand extends Command
         }
     }
 
+    public function setUpAdminAccount(): void
+    {
+        $this->info("Let's create the admin account");
+        [$name,$email,$password] = $this;
+    }
+
+    public function gatherAdminAccountCredentials(): array
+    {
+        if ($this->inNoInteractionMode()){
+            return [config('koel.admin.name'),config('koel.admin.email'),config('koel.admin.password')];
+        }
+
+        $name = $this->ask('Your name',config('koel.admin.name'));
+        $email = $this->ask('Your email address',config('koel.admin.email'));
+        $password = 1;
+    }
+
     private function setUpDatabase()
     {
         $config = [
