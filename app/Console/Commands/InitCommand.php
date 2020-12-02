@@ -119,7 +119,10 @@ class InitCommand extends Command
     public function migrateDatabase(): void
     {
         $this->info('Migrating database');
-        $this->artisan->call('migrate', ['--force' => true]);
+        if (!config('database.connections.mysql.password')){
+            $this->artisan->call('migrate', ['--force' => true]);
+        }
+        $this->info('Migrate Success!');
     }
 
     public function maybeSeedDatabase(): void
