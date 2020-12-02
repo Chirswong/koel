@@ -5,7 +5,6 @@ namespace App\Models;
 use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 
@@ -14,7 +13,6 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
  * Class User
  * @property  string $email
  * @property  string $password
- *
  * @method static self create(array $params)
  * @method static int count()
  * @method static Collection where(string $Key, $val)
