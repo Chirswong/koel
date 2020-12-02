@@ -6,11 +6,15 @@ use App\Models\User;
 use Illuminate\Console\Command;
 use Jackiedo\DotenvEditor\DotenvEditor;
 use Illuminate\Database\DatabaseManager as DB;
+use App\Console\Commands\Traits\AskForPassword;
 use App\Exceptions\InstallationFailedException;
+use Illuminate\Contracts\Hashing\Hasher as Hash;
 use Illuminate\Contracts\Console\Kernel as Artisan;
 
 class InitCommand extends Command
 {
+    use AskForPassword;
+
     /**
      * The name and signature of the console command.
      *
@@ -20,6 +24,7 @@ class InitCommand extends Command
     protected $description = 'Install or upgrade Koel';
 
     private $db;
+    private $hash;
     private $artisan;
     private $dotenvEditor;
 
@@ -27,17 +32,20 @@ class InitCommand extends Command
      * Create a new command instance.
      *
      * @param DB $db
+     * @param Hash $hash
      * @param Artisan $artisan
      * @param DotenvEditor $dotenvEditor
      */
     public function __construct(
         DB $db,
+        Hash $hash,
         Artisan $artisan,
         DotenvEditor $dotenvEditor
     )
     {
         parent::__construct();
         $this->db = $db;
+        $this->hash = $hash;
         $this->artisan = $artisan;
         $this->dotenvEditor = $dotenvEditor;
     }
@@ -87,22 +95,22 @@ class InitCommand extends Command
         if (!config('app.key')) {
             $this->info('Generate app key');
             $this->artisan->call('key:generate');
-        }else{
+        } else {
             $this->comment('App Key exists -- skipping');
         }
     }
 
     public function maybeSetUpDatabase(): void
     {
-        while (true){
+        while (true) {
             try {
                 // make sure the config cache is cleared before another attempt.
                 $this->artisan->call('config:clear');
                 $this->db->reconnect()->getPdo();
                 break;
-            }catch (\Exception $exception){
+            } catch (\Exception $exception) {
                 $this->error($exception->getMessage());
-                $this->warn(PHP_EOL."Koel cannot connect to the database. Let's set it up");
+                $this->warn(PHP_EOL . "Koel cannot connect to the database. Let's set it up");
                 $this->setUpDatabase();
             }
         }
@@ -111,16 +119,16 @@ class InitCommand extends Command
     public function migrateDatabase(): void
     {
         $this->info('Migrating database');
-        $this->artisan->call('migrate',['--force' => true]);
+        $this->artisan->call('migrate', ['--force' => true]);
     }
 
     public function maybeSeedDatabase(): void
     {
-        if (!User::count()){
-            $this->setUpDatabase();
+        if (!User::count()) {
+            $this->setUpAdminAccount();
             $this->info('Seeding initial data');
-            $this->artisan->call('db:seed',['--force' => true]);
-        }else{
+            $this->artisan->call('db:seed', ['--force' => true]);
+        } else {
             $this->comment('Data seeded -- skipping');
         }
     }
@@ -144,11 +152,11 @@ class InitCommand extends Command
             passthru($command, $status);
             throw_if((bool)$status, InstallationFailedException::class);
         };
-        if (!is_dir('node_modules')){
+        if (!is_dir('node_modules')) {
             $runOkOrThrow('yarn install --colors');
         }
         chdir('../..');
-        if (!is_dir('node_modules')){
+        if (!is_dir('node_modules')) {
             $this->info('└── Compiling assets');
 
             $runOkOrThrow('yarn install --colors');
@@ -159,18 +167,25 @@ class InitCommand extends Command
     public function setUpAdminAccount(): void
     {
         $this->info("Let's create the admin account");
-        [$name,$email,$password] = $this;
+        [$name, $email, $password] = $this->gatherAdminAccountCredentials();
+        User::create([
+            'name' => $name,
+            'email' => $email,
+            'password' => $this->hash->make($password),
+            'is_admin' => true,
+        ]);
     }
 
     public function gatherAdminAccountCredentials(): array
     {
-        if ($this->inNoInteractionMode()){
-            return [config('koel.admin.name'),config('koel.admin.email'),config('koel.admin.password')];
+        if ($this->inNoInteractionMode()) {
+            return [config('koel.admin.name'), config('koel.admin.email'), config('koel.admin.password')];
         }
 
-        $name = $this->ask('Your name',config('koel.admin.name'));
-        $email = $this->ask('Your email address',config('koel.admin.email'));
-        $password = 1;
+        $name = $this->ask('Your name', config('koel.admin.name'));
+        $email = $this->ask('Your email address', config('koel.admin.email'));
+        $password = $this->askForPassword();
+        return [$name, $email, $password];
     }
 
     private function setUpDatabase()
