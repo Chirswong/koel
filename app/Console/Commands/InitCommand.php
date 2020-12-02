@@ -2,8 +2,10 @@
 
 namespace App\Console\Commands;
 
+use App\Models\User;
 use Illuminate\Console\Command;
 use Jackiedo\DotenvEditor\DotenvEditor;
+use Illuminate\Database\DatabaseManager as DB;
 use App\Exceptions\InstallationFailedException;
 use Illuminate\Contracts\Console\Kernel as Artisan;
 
@@ -17,20 +19,24 @@ class InitCommand extends Command
     protected $signature = 'koel:init {--no-assets}';
     protected $description = 'Install or upgrade Koel';
 
+    private $db;
     private $artisan;
     private $dotenvEditor;
 
     /**
      * Create a new command instance.
      *
-     * @return void
+     * @param Artisan $artisan
+     * @param DotenvEditor $dotenvEditor
      */
     public function __construct(
+        DB $db,
         Artisan $artisan,
         DotenvEditor $dotenvEditor
     )
     {
         parent::__construct();
+        $this->db = $db;
         $this->artisan = $artisan;
         $this->dotenvEditor = $dotenvEditor;
     }
@@ -52,6 +58,8 @@ class InitCommand extends Command
 
         try {
             $this->maybeGenerateAppKey();
+            $this->maybeSetUpDatabase();
+            $this->maybeSeedDatabase();
             $this->maybeCompileFrontEndAssets();
         } catch (\Exception $e) {
             $this->error("Oops! Koel installation or upgrade didn't finish successfully.");
@@ -82,6 +90,39 @@ class InitCommand extends Command
         }
     }
 
+    public function maybeSetUpDatabase(): void
+    {
+        while (true){
+            try {
+                // make sure the config cache is cleared before another attempt.
+                $this->artisan->call('config:clear');
+                $this->db->reconnect()->getPdo();
+                break;
+            }catch (\Exception $exception){
+                $this->error($exception->getMessage());
+                $this->warn(PHP_EOL."Koel cannot connect to the database. Let's set it up");
+                $this->setUpDatabase();
+            }
+        }
+    }
+
+    public function migrateDatabase(): void
+    {
+        $this->info('Migrating database');
+        $this->artisan->call('migrate',['--force' => true]);
+    }
+
+    public function maybeSeedDatabase(): void
+    {
+        if (!User::count()){
+            $this->setUpDatabase();
+            $this->info('Seeding initial data');
+            $this->artisan->call('db:seed',['--force' => true]);
+        }else{
+            $this->comment('Data seeded -- skipping');
+        }
+    }
+
     private function maybeCompileFrontEndAssets()
     {
         if ($this->inNoAssetsMode()) {
@@ -95,6 +136,9 @@ class InitCommand extends Command
         // - The second and third for the root folder, to build Koel's front-end assets with Mix.
 
         chdir('./resources/assets');
+        if (is_dir('node_modules')){
+            return;
+        }
         $this->info('├── Installing Node modules in resources/assets directory');
 
         $runOkOrThrow = static function ($command) {
@@ -105,6 +149,9 @@ class InitCommand extends Command
         $runOkOrThrow('yarn install --colors');
 
         chdir('../..');
+        if (is_dir('node_modules')){
+            return;
+        }
         $this->info('└── Compiling assets');
 
         $runOkOrThrow('yarn install --colors');
