@@ -2,9 +2,9 @@
 
 namespace App\Console\Commands;
 
-use App\Exceptions\InstallationFailedException;
 use Illuminate\Console\Command;
 use Jackiedo\DotenvEditor\DotenvEditor;
+use App\Exceptions\InstallationFailedException;
 use Illuminate\Contracts\Console\Kernel as Artisan;
 
 class InitCommand extends Command
@@ -51,6 +51,7 @@ class InitCommand extends Command
         }
 
         try {
+            $this->maybeGenerateAppKey();
             $this->maybeCompileFrontEndAssets();
         } catch (\Exception $e) {
             $this->error("Oops! Koel installation or upgrade didn't finish successfully.");
@@ -69,6 +70,16 @@ class InitCommand extends Command
     private function inNoAssetsMode()
     {
         return (bool)$this->option('no-assets');
+    }
+
+    public function maybeGenerateAppKey(): void
+    {
+        if (!config('app.key')) {
+            $this->info('Generate app key');
+            $this->artisan->call('key:generate');
+        }else{
+            $this->comment('App Key exists -- skipping');
+        }
     }
 
     private function maybeCompileFrontEndAssets()
