@@ -26,6 +26,7 @@ class InitCommand extends Command
     /**
      * Create a new command instance.
      *
+     * @param DB $db
      * @param Artisan $artisan
      * @param DotenvEditor $dotenvEditor
      */
@@ -59,6 +60,7 @@ class InitCommand extends Command
         try {
             $this->maybeGenerateAppKey();
             $this->maybeSetUpDatabase();
+            $this->migrateDatabase();
             $this->maybeSeedDatabase();
             $this->maybeCompileFrontEndAssets();
         } catch (\Exception $e) {
@@ -136,26 +138,22 @@ class InitCommand extends Command
         // - The second and third for the root folder, to build Koel's front-end assets with Mix.
 
         chdir('./resources/assets');
-        if (is_dir('node_modules')){
-            return;
-        }
         $this->info('├── Installing Node modules in resources/assets directory');
 
         $runOkOrThrow = static function ($command) {
             passthru($command, $status);
             throw_if((bool)$status, InstallationFailedException::class);
         };
-
-        $runOkOrThrow('yarn install --colors');
-
-        chdir('../..');
-        if (is_dir('node_modules')){
-            return;
+        if (!is_dir('node_modules')){
+            $runOkOrThrow('yarn install --colors');
         }
-        $this->info('└── Compiling assets');
+        chdir('../..');
+        if (!is_dir('node_modules')){
+            $this->info('└── Compiling assets');
 
-        $runOkOrThrow('yarn install --colors');
-        $runOkOrThrow('yarn production --colors');
+            $runOkOrThrow('yarn install --colors');
+            $runOkOrThrow('yarn production --colors');
+        }
     }
 
     private function setUpDatabase()
