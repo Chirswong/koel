@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\API;
 
+use App\Models\User;
 use App\Service\TokenManager;
 use Illuminate\Http\Response;
 use Illuminate\Hashing\HashManager;
@@ -13,6 +14,7 @@ use Illuminate\Contracts\Auth\Authenticatable;
 class AuthController extends Controller
 {
     private $hash;
+    /** @var User|null */
     private $currentUser;
     private $tokenManager;
     private $userRepository;
@@ -46,6 +48,7 @@ class AuthController extends Controller
     public function logout()
     {
         $this->tokenManager->destroyTokens($this->currentUser);
+
         return response()->json(null, Response::HTTP_NO_CONTENT);
     }
 }
