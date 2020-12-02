@@ -42,4 +42,10 @@ class AuthController extends Controller
             'token' => $this->tokenManager->createToken($user)->plainTextToken,
         ]);
     }
+
+    public function logout()
+    {
+        $this->tokenManager->destroyTokens($this->currentUser);
+        return response()->json(null, Response::HTTP_NO_CONTENT);
+    }
 }

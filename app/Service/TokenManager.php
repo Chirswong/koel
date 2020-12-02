@@ -11,4 +11,9 @@ class TokenManager
     {
         return $user->createToken(config('app.name'), $abilities);
     }
+
+    public function destroyTokens(User $user): void
+    {
+        $user->tokens()->delete();
+    }
 }
