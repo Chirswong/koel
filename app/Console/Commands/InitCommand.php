@@ -165,6 +165,7 @@ class InitCommand extends Command
             $runOkOrThrow('yarn install --colors');
             $runOkOrThrow('yarn production --colors');
         }
+        $this->info('└── Compiling assets  node_modules exists');
     }
 
     public function setUpAdminAccount(): void

@@ -18,12 +18,8 @@ use App\Http\Controllers\API\DataController;
 Route::group(['namespace' => 'API'], function () {
     Route::post('me', [AuthController::class, 'login'])->name('auth.login');
     Route::delete('me', [AuthController::class, 'logout']);
-    Route::get('data', [DataController::class, 'index']);
-
-    Route::group(['middleware' => 'auth'], function () {
-
-
-
+    Route::group(['middleware' => 'auth:sanctum'],function (){
+        Route::get('data', [DataController::class, 'index']);
     });
     Route::middleware('auth:api')->get('/user', function (Request $request) {
         return $request->user();
