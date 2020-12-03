@@ -4,6 +4,10 @@ namespace App\Service;
 
 class iTunesService extends AbstractApiClient implements ApiConsumerInterface
 {
+    public function used()
+    {
+        return (bool)config('koel.itunes.enable');
+    }
 
     public function getKey(): ?string
     {

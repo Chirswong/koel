@@ -7,6 +7,11 @@ class LastfmService extends AbstractApiClient implements ApiConsumerInterface
 
     protected $KeyParam = 'api_key';
 
+    public function used()
+    {
+        return (bool) $this->getKey();
+    }
+
     public function getKey(): ?string
     {
         // TODO: Implement getKey() method.

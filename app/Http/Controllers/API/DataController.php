@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\API;
 
+use App\Application;
 use App\Models\User;
 use Illuminate\Http\Request;
 use App\Service\iTunesService;
@@ -70,6 +71,18 @@ class DataController extends Controller
                     self::RECENTLY_PLAYED_EXCERPT_COUNT
                 ),
                 'users' => $this->currentUser->is_admin ? $this->userRepository->getAll() : [],
+                'currentUser' => $this->currentUser,
+                'useLastfm' => $this->lastfmService->used(),
+                'useYouTube' => $this->youTubeService->enabled(),
+                'useiTunes' => $this->iTunesService->used(),
+                'allowDownload' => config('koel.download.allow'),
+                'supportsTranscoding' => config('koel.streaming.ffmpeg_path')
+                && is_executable(config('koel.streaming.ffmpeg_path')),
+                'cndUrl' => app()->staticUlr(),
+                'currentVersion' => Application::KOEK_VERSION,
+                'latestVersion' => $this->currentUser->is_admin
+                ? $this->applicationInformationService->getLatestVersionNumber()
+                    : Application::KOEK_VERSION
             ]
         );
     }
