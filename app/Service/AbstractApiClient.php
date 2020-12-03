@@ -9,6 +9,14 @@ use Illuminate\Cache\Repository as Cache;
 use Illuminate\Support\Str;
 use SimpleXMLElement;
 
+/**
+ * @method object get($uri, ...$args)
+ * @method object post($uri, ...$data)
+ * @method object put($uri, ...$data)
+ * @method object patch($uri, ...$data)
+ * @method object head($uri, ...$data)
+ * @method object delete($uri)
+ */
 abstract class AbstractApiClient
 {
     protected $cache;
