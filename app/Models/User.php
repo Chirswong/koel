@@ -11,8 +11,12 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 
 /**
  * Class User
- * @property  string $email
- * @property  string $password
+ * @property array  $preferences
+ * @property int    $id
+ * @property bool   $is_admin
+ * @property string $lastfm_session_key
+ * @property string $email
+ * @property string $password
  * @method static self create(array $params)
  * @method static int count()
  * @method static Collection where(string $Key, $val)
