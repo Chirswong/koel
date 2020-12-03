@@ -2,6 +2,7 @@
 
 namespace App\Service;
 
+use App\Models\Album;
 use Illuminate\Cache\Repository as Cache;
 
 class MediaCacheService
@@ -28,7 +29,8 @@ class MediaCacheService
     private function query(): array
     {
         return [
-            'albums'
+            'albums' => Album::query()->orderBy('name')->get(),
+            'artists',
         ];
     }
 }
