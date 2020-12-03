@@ -49,8 +49,8 @@ class DataController extends Controller
         $this->lastfmService  = $lastfmService;
         $this->userRepository = $userRepository;
         $this->youTubeService = $youTubeService;
-        $this->mediaCacheService = $mediaCacheService;
-        $this->settingRepository = $settingRepository;
+        $this->mediaCacheService  = $mediaCacheService;
+        $this->settingRepository  = $settingRepository;
         $this->playlistRepository = $playlistRepository;
         $this->interactionRepository = $interactionRepository;
         $this->applicationInformationService = $applicationInformationService;
@@ -58,8 +58,16 @@ class DataController extends Controller
 
     public function index()
     {
-        return response()->json($this->mediaCacheService->get() + [
-            'settings' => $this->currentUser->is_admin ? $this->settingRepository->getAllAsKeyValueArray() : [],
-            ]);
+        return response()->json($this->mediaCacheService->get() +
+            [
+                'settings' => $this->currentUser->is_admin ? $this->settingRepository->getAllAsKeyValueArray() : [],
+                'playlists' => $this->playlistRepository->getAllByCurrentUser(),
+                'interactions' => $this->interactionRepository->getAllByCurrentUser(),
+                'recentlyPlayed' => $this->interactionRepository->getRecentlyPlayed(
+                    $this->currentUser,
+                    self::RECENTLY_PLAYED_EXCERPT_COUNT
+                )
+            ]
+        );
     }
 }
