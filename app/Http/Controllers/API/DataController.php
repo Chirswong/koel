@@ -2,22 +2,23 @@
 
 namespace App\Http\Controllers\API;
 
-use App\Http\Controllers\Controller;
-use App\Repositories\InteractionRepository;
-use App\Repositories\PlaylistRepository;
-use App\Repositories\SettingRepository;
-use App\Repositories\UserRepository;
-use App\Service\ApplicationInformationService;
+use App\Models\User;
+use Illuminate\Http\Request;
 use App\Service\iTunesService;
 use App\Service\LastfmService;
-use App\Service\MediaCacheService;
 use App\Service\YouTubeService;
+use App\Service\MediaCacheService;
+use App\Http\Controllers\Controller;
+use App\Repositories\UserRepository;
+use App\Repositories\SettingRepository;
+use App\Repositories\PlaylistRepository;
+use App\Repositories\InteractionRepository;
 use Illuminate\Contracts\Auth\Authenticatable;
-use Illuminate\Http\Request;
+use App\Service\ApplicationInformationService;
 
 class DataController extends Controller
 {
-
+    private const RECENTLY_PLAYED_EXCERPT_COUNT = 7;
 
     private $lastfmService;
     private $youTubeService;
@@ -29,6 +30,7 @@ class DataController extends Controller
     private $userRepository;
     private $applicationInformationService;
 
+    /** @var User*/
     private $currentUser;
 
     public function __construct(
@@ -66,7 +68,8 @@ class DataController extends Controller
                 'recentlyPlayed' => $this->interactionRepository->getRecentlyPlayed(
                     $this->currentUser,
                     self::RECENTLY_PLAYED_EXCERPT_COUNT
-                )
+                ),
+                'users' => $this->currentUser->is_admin ? $this->userRepository->getAll() : [],
             ]
         );
     }
