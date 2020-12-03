@@ -3,6 +3,8 @@
 namespace App\Service;
 
 use App\Models\Album;
+use App\Models\Artist;
+use App\Models\Song;
 use Illuminate\Cache\Repository as Cache;
 
 class MediaCacheService
@@ -30,7 +32,13 @@ class MediaCacheService
     {
         return [
             'albums' => Album::query()->orderBy('name')->get(),
-            'artists',
+            'artists' => Artist::query()->orderBy('name')->get(),
+            'songs' => Song::all()
         ];
+    }
+
+    public function clear(): void
+    {
+        $this->cache->forget(self::CACHE_KEY);
     }
 }
