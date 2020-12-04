@@ -29,6 +29,7 @@ class UploadService
 
         $targetPathName = $this->getUploadDirectory() . $targetFileName;
         $this->fileSynchronizer->setFile($targetPathName);
+        $result = $this->fileSynchronizer->sync();
     }
 
     /**

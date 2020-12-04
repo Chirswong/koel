@@ -1,8 +1,12 @@
 <?php
 
 namespace App\Service;
-use App\Models\Song;
+
 use SplFileInfo;
+use App\Models\Song;
+use App\Repositories\SongRepository;
+use Symfony\Component\Finder\Finder;
+use Illuminate\Contracts\Cache\Repository as Cache;
 
 class FileSynchronizer
 {
@@ -53,23 +57,60 @@ class FileSynchronizer
      */
     private $syncError;
 
-    public function getFile($path)
+    public function __construct(
+        Cache $cache,
+        Finder $finder,
+        HelperService $helperService,
+        SongRepository $songRepository
+    )
+    {
+        $this->cache = $cache;
+        $this->finder = $finder;
+        $this->helperService = $helperService;
+        $this->songRepository = $songRepository;
+    }
+
+    /**
+     * @param $path
+     * @return $this
+     */
+    public function setFile($path)
     {
         $this->splFileInfo = $path instanceof SplFileInfo ? $path : new SplFileInfo($path);
 
         try {
             $this->fileModifiedTime = $this->splFileInfo->getMTime();
-        }catch (\Exception $exception){
+        } catch (\Exception $exception) {
             $this->fileModifiedTime = time();
         }
 
         $this->filePath = $this->splFileInfo->getPathname();
-        $this->fileHash = $this->getFileHash($this->filePath);
-        $this->song = null;
+        $this->fileHash = $this->helperService->getFileHash($this->filePath);
+        $this->song = $this->songRepository->getOneById($this->fileHash);
+        $this->syncError = null;
+
+        return $this;
     }
 
-    public function getFileHash(string $path): string
+    public function sync(array $tags, bool $force = false)
     {
-        return md5(config('app.key').$path);
+        if (!$this->isFileNewOrChanged() && !$force){
+
+        }
+    }
+
+    public function isFileChanged()
+    {
+        return !$this->isFileNew() && $this->song->mtime !== $this->fileModifiedTime;
+    }
+
+    public function isFileNewOrChanged()
+    {
+        return $this->isFileNew() || $this->isFileChanged();
+    }
+
+    public function isFileNew()
+    {
+        return !$this->song;
     }
 }
