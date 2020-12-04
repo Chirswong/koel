@@ -95,7 +95,11 @@ class FileSynchronizer
     public function sync(array $tags, bool $force = false)
     {
         if (!$this->isFileNewOrChanged() && !$force){
+            return self::SYNC_RESULT_UNMODIFIED;
+        }
 
+        if (!$info = $this->getFileInfo()){
+            return  self::SYNC_RESULT_BAD_FILE;
         }
     }
 
@@ -112,5 +116,10 @@ class FileSynchronizer
     public function isFileNew()
     {
         return !$this->song;
+    }
+
+    public function getFileInfo()
+    {
+        $info = $this->getID3;
     }
 }

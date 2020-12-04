@@ -1,15 +1,12 @@
 <?php
+
 namespace App\Service;
 
+use App\Models\Setting;
 use Psr\Log\LoggerInterface;
-use App\Services\HelperService;
-use App\Services\FileSynchronizer;
 use App\Repositories\SongRepository;
 use Symfony\Component\Finder\Finder;
 use App\Console\Commands\SyncCommand;
-use App\Repositories\AlbumRepository;
-use App\Services\MediaMetadataService;
-use App\Repositories\ArtistRepository;
 use App\Repositories\SettingRepository;
 
 class MediaSyncService
@@ -48,21 +45,16 @@ class MediaSyncService
         LoggerInterface $logger,
         HelperService $helperService,
         SongRepository $songRepository,
-        AlbumRepository $albumRepository,
-        ArtistRepository $artistRepository,
         FileSynchronizer $fileSynchronizer,
         SettingRepository $settingRepository,
-        MediaMetadataService $mediaMetadataService
-    ) {
+    )
+    {
         $this->finder = $finder;
         $this->logger = $logger;
         $this->helperService = $helperService;
         $this->songRepository = $songRepository;
-        $this->albumRepository = $albumRepository;
         $this->fileSynchronizer = $fileSynchronizer;
-        $this->artistRepository = $artistRepository;
         $this->settingRepository = $settingRepository;
-        $this->mediaMetadataService = $mediaMetadataService;
     }
 
     /**
@@ -72,23 +64,57 @@ class MediaSyncService
      */
     protected $tags = [];
 
-    /**
-     * Sync the media. Oh sync the media.
-     *
-     * @param string[]    $tags        The tags to sync.
-     *                                 Only taken into account for existing records.
-     *                                 New records will have all tags synced in regardless.
-     * @param bool        $force       Whether to force syncing even unchanged files
-     * @param SyncCommand $syncCommand the SyncMedia command object, to log to console if executed by artisan
-     *
-     * @throws Exception
-     */
-    public function sync(
-        $mediaPath = null,
-        array $tags = [],
-        bool $force = false,
-        SyncCommand $syncCommand)
-    {
 
+    public function sync($mediaPath = null, $tags = [], $force = false, SyncCommand $syncCommand)
+    {
+        $this->setSystemRequirements();
+        $this->tags($tags);
+
+        $results = [
+            'success' => [],
+            'bad_files' => [],
+            'unmodified' => [],
+        ];
+
+        $songPaths = $this->gatherFiles($mediaPath ?: Setting::get('media_path'));
+
+        if ($syncCommand) {
+            $syncCommand->createProgressBar(count($songPaths));
+        }
+
+        foreach ($songPaths as $path) {
+            $result = $this->fileSynchronizer->setFile($path)->sync($this->tags, $force);
+
+
+        }
+    }
+
+    private function setSystemRequirements()
+    {
+        if (!app()->runningInConsole()) {
+            set_time_limit(config('koel.sync.timeout'));
+        }
+
+        if (config('koel.memory_limit')) {
+            ini_set('memory_limit', config('koel.memory_limit') . 'M');
+        }
+    }
+
+    public function setTags($tags = [])
+    {
+        $this->tags = array_intersect($tags, self::APPLICABLE_TAGS) ?: self::APPLICABLE_TAGS;
+    }
+
+    public function gatherFiles($path)
+    {
+        return iterator_to_array(
+            $this->finder->create()
+                ->ignoreUnreadableDirs()
+                ->ignoreDotFiles((bool)config('koel.ignore_dot_files'))
+                ->files()
+                ->followLinks()
+                ->name('/\.(mp3|ogg|m4a|flac)$/i')
+                ->in($path)
+        );
     }
 }
