@@ -14,7 +14,7 @@ class LastfmService extends AbstractApiClient implements ApiConsumerInterface
 
     public function getKey(): ?string
     {
-        // TODO: Implement getKey() method.
+        return config('koel.lastfm.key');
     }
 
     public function getSecret(): ?string
@@ -24,6 +24,6 @@ class LastfmService extends AbstractApiClient implements ApiConsumerInterface
 
     public function getEndpoint(): ?string
     {
-        // TODO: Implement getEndpoint() method.
+        return config('koel.lastfm.secret');
     }
 }

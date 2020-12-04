@@ -11,7 +11,7 @@ class YouTubeService extends AbstractApiClient implements ApiConsumerInterface
     }
     public function getKey(): ?string
     {
-        // TODO: Implement getKey() method.
+        return config('koel.youtube.key');
     }
 
     public function getSecret(): ?string
